@@ -3,100 +3,39 @@ package servlet;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.charset.Charset;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 
 public class AIOServer {
-    public final static int PORT = 9888;
-    private AsynchronousServerSocketChannel server;
-
-    public AIOServer() throws IOException {
-        server = AsynchronousServerSocketChannel.open().bind(
-                new InetSocketAddress(PORT));
-    }
-
-    public void startWithFuture() throws InterruptedException,
-            ExecutionException, TimeoutException {
-        while (true) {
-            Future<AsynchronousSocketChannel> future = server.accept();
-            AsynchronousSocketChannel socket = future.get ();
-            handleWithFuture(socket);
-        }
-    }
-    public void handleWithFuture(AsynchronousSocketChannel channel) throws InterruptedException, ExecutionException, TimeoutException {
-        ByteBuffer readBuf = ByteBuffer.allocate(2);
-        readBuf.clear();
-
-        while (true) {
-            Integer integer = channel.read(readBuf).get(10, TimeUnit.SECONDS);
-            System.out.println("read: " + integer);
-            if (integer == -1) {
-                break;
-            }
-            readBuf.flip();
-            System.out.println("received: " + Charset.forName("UTF-8").decode(readBuf));
-            readBuf.clear();
-        }
-    }
-
-    public void startWithCompletionHandler() throws InterruptedException,
-            ExecutionException, TimeoutException {
-        server.accept(null,
-                new CompletionHandler<AsynchronousSocketChannel, Object>() {
-                    public void completed(AsynchronousSocketChannel result, Object attachment) {
-                        server.accept (null, this); // Receive client connection
-                        handleWithCompletionHandler(result);
-                    }
-
-                    @Override
-                    public void failed(Throwable exc, Object attachment) {
-                        exc.printStackTrace();
-                    }
-                });
-    }
-
-    public void handleWithCompletionHandler(final AsynchronousSocketChannel channel) {
+    private ExecutorService executorService;          // Thread Pool
+    private AsynchronousChannelGroup threadGroup;      // Channel group
+    public AsynchronousServerSocketChannel asynServerSocketChannel;  // server channel
+    public void start(Integer port){
         try {
-            final ByteBuffer buffer = ByteBuffer.allocate(16);
-            final long timeout = 10L;
-            channel.read(buffer, timeout, TimeUnit.SECONDS, null, new CompletionHandler<Integer, Object>() {
-                @Override
-                public void completed(Integer result, Object attachment) {
-                    System.out.println("read:" + result);
-                    if (result == -1) {
-                        try {
-                            channel.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                        return;
-                    }
-                    buffer.flip();
-                    System.out.println("received message:" + Charset.forName("UTF-8").decode(buffer));
-                    buffer.clear();
-                    channel.read(buffer, timeout, TimeUnit.SECONDS, null, this);
-                }
-
-                @Override
-                public void failed(Throwable exc, Object attachment) {
-                    exc.printStackTrace();
-                }
-            });
+            // 1. Create a cache pool
+            executorService = Executors.newCachedThreadPool();
+            // 2. Create a channel group
+            threadGroup = AsynchronousChannelGroup.withCachedThreadPool(executorService, 1);
+            // 3. Create a server channel
+            asynServerSocketChannel = AsynchronousServerSocketChannel.open(threadGroup);
+            // 4. Binding
+            asynServerSocketChannel.bind(new InetSocketAddress(port));
+            System.out.println("server start , port : " + port);
+            // 5. Wait for client request
+            asynServerSocketChannel.accept(this, new AIOServerHandler());
+            // Block all the time, don't let the server stop, the real environment is running under tomcat, so this line of code is not needed
+            Thread.sleep(Integer.MAX_VALUE);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-
-    public static void main(String args[]) throws Exception {
-        new AIOServer().startWithFuture();
-//        new AioServer().startWithCompletionHandler();
-        Thread.sleep(100000);
+    public static void main(String[] args) {
+        AIOServer server = new AIOServer();
+        server.start(8888);
     }
 }

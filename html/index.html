@@ -4,7 +4,40 @@
     <meta charset="UTF-8">
     <title>Title</title>
 </head>
+<script>
+    function enterChat() {
+        console.log("enter");
+        var chat_text = document.getElementById("chat_context").value;
+        console.log(chat_text);
+        var params = {
+            chat_text: chat_text
+        };
+        fetch("http://localhost:10800/Login?" + new URLSearchParams({
+                chat_text: chat_text
+            })).then(
+            (res) => {
+                console.log(res);
+            }
+        )
+    }
+</script>
+<style>
+    .chat-board {
+        max-width: 1200px;
+        width: 80%;
+        border: 1px solid #000;
+        min-height: 10vh;
+    }
+</style>
 <body>
     <div>hihihi</div>
+    <div>안녕하세요 채팅 연습 판입니다.</div>
+    <div class="chat-board">
+
+    </div>
+    <div class="chat-input">
+        <input type="text" class="" id="chat_context" placeholder="채팅을 입력해 주세요" />
+        <button onclick="enterChat()">입력 완료</button>
+    </div>
 </body>
 </html>

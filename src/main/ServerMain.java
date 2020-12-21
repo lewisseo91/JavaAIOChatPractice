@@ -44,7 +44,7 @@ public class ServerMain {
 	}
 
 	public static void AIOServerStart() throws Exception {
-		new AIOServer().startWithFuture();
+		new AIOServer().start(8888);
 //        new AioServer().startWithCompletionHandler();
 		Thread.sleep(100000);
 	}

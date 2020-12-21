@@ -10,17 +10,19 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 
-@WebServlet("/call/Login")
+@WebServlet("/Login")
 public class Login extends HttpServlet {
+
     public Login() {
         super();
     }
 
     protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
         try {
+            String chatText = req.getParameter("chat_text");
             AsynchronousSocketChannel client = AsynchronousSocketChannel.open();
-            client.connect(new InetSocketAddress("localhost", 9888)).get();
-            client.write(ByteBuffer.wrap("123456789sakgjlkadsjlgas".getBytes()));
+            client.connect(new InetSocketAddress("localhost", 8888)).get();
+            client.write(ByteBuffer.wrap(chatText.getBytes()));
             Thread.sleep(1111111);
         } catch (Exception e) {
             e.printStackTrace();
