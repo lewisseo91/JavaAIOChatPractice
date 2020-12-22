@@ -10,7 +10,7 @@ public class AIOServerHandler  implements CompletionHandler<AsynchronousSocketCh
     @Override
     public void completed(AsynchronousSocketChannel asynSocketChannel, AIOServer attachment) {
         // Ensure that multiple clients can block
-        attachment.asynServerSocketChannel.accept(attachment, this);
+//        attachment.asynServerSocketChannel.accept(attachment, this);
         read(asynSocketChannel);
     }
     //Read data

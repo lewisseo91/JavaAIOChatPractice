@@ -3,39 +3,69 @@ package servlet;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.AsynchronousChannelGroup;
-import java.nio.channels.AsynchronousServerSocketChannel;
-import java.nio.channels.AsynchronousSocketChannel;
-import java.nio.channels.CompletionHandler;
+import java.nio.channels.*;
 import java.nio.charset.Charset;
-import java.util.concurrent.*;
 
 
 public class AIOServer {
-    private ExecutorService executorService;          // Thread Pool
-    private AsynchronousChannelGroup threadGroup;      // Channel group
-    public AsynchronousServerSocketChannel asynServerSocketChannel;  // server channel
-    public void start(Integer port){
-        try {
-            // 1. Create a cache pool
-            executorService = Executors.newCachedThreadPool();
-            // 2. Create a channel group
-            threadGroup = AsynchronousChannelGroup.withCachedThreadPool(executorService, 1);
-            // 3. Create a server channel
-            asynServerSocketChannel = AsynchronousServerSocketChannel.open(threadGroup);
-            // 4. Binding
-            asynServerSocketChannel.bind(new InetSocketAddress(port));
-            System.out.println("server start , port : " + port);
-            // 5. Wait for client request
-            asynServerSocketChannel.accept(this, new AIOServerHandler());
-            // Block all the time, don't let the server stop, the real environment is running under tomcat, so this line of code is not needed
-            Thread.sleep(Integer.MAX_VALUE);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    public static int PORT = 10800;
+    public static AsynchronousServerSocketChannel serverSocketChannel;
+    public static void handleCompletionHandler(AsynchronousSocketChannel serverChannel) throws IOException {
+        ByteBuffer buffer = ByteBuffer.allocate(1024);
+        serverChannel.read(buffer, null, new CompletionHandler<Integer, Void>() {
+            @Override
+            public void completed(Integer result, Void attachment) {
+                if( result < 0) {
+                    try {
+                        serverChannel.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                buffer.flip();
+                System.out.println("received message:" + Charset.forName("UTF-8").decode(buffer));
+                buffer.position(0);
+                buffer.limit(buffer.capacity());
+                serverChannel.read(buffer, null, this);
+            }
+
+            @Override
+            public void failed(Throwable exc, Void attachment) {
+                System.err.println(exc);
+                try {
+                    serverChannel.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
-    public static void main(String[] args) {
-        AIOServer server = new AIOServer();
-        server.start(8888);
+
+    public static void main(String[] args) throws Exception {
+        serverSocketChannel = AsynchronousServerSocketChannel.open();
+        serverSocketChannel.bind(new InetSocketAddress(PORT));
+        serverSocketChannel.accept(null, new CompletionHandler<AsynchronousSocketChannel, Void>() {
+            @Override
+            public void completed(AsynchronousSocketChannel result, Void attachment) {
+                System.out.println("Server Connected");
+                try {
+                    handleCompletionHandler(result);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void failed(Throwable exc, Void attachment) {
+                System.err.println(exc);
+                try {
+                    serverSocketChannel.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        System.out.println("Server opened : " + new InetSocketAddress(PORT).getAddress().toString());
+        Thread.currentThread().join();
     }
 }
