@@ -11,10 +11,11 @@ public class AIOServer {
     public static int PORT = 10800;
     public static AsynchronousServerSocketChannel serverSocketChannel;
     public static void handleCompletionHandler(AsynchronousSocketChannel serverChannel) throws IOException {
-        ByteBuffer buffer = ByteBuffer.allocate(1024);
+        ByteBuffer buffer = ByteBuffer.allocate(12);
         serverChannel.read(buffer, null, new CompletionHandler<Integer, Void>() {
             @Override
             public void completed(Integer result, Void attachment) {
+
                 if( result < 0) {
                     try {
                         serverChannel.close();
@@ -23,6 +24,8 @@ public class AIOServer {
                     }
                 }
                 buffer.flip();
+                int bufferSize = buffer.getInt(0);
+                System.out.println(bufferSize);
                 System.out.println("received message:" + Charset.forName("UTF-8").decode(buffer));
                 buffer.position(0);
                 buffer.limit(buffer.capacity());
