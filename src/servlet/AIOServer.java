@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.channels.*;
 import java.nio.charset.Charset;
 
@@ -16,6 +17,7 @@ public class AIOServer {
         serverChannel.read(buffer, null, new CompletionHandler<Integer, Void>() {
             int currentBufferSize = 0;
             int currentRemainingBufferSize = 0;
+            String currentString = "";
             @Override
             public void completed(Integer result, Void attachment) {
 
@@ -32,16 +34,25 @@ public class AIOServer {
 //                    System.out.println("remaining:" + ", " + buffer.remaining());
                     currentBufferSize = buffer.getInt(0);
                 }
+
                 currentRemainingBufferSize += buffer.remaining();
 
                 System.out.println("currentBufferSize:" + ", " + currentBufferSize);
                 System.out.println("currentRemainingBufferSize:" + ", " + currentRemainingBufferSize);
-                System.out.println("received message:" + Charset.forName("UTF-8").decode(buffer));
+//                System.out.println("received message:" + Charset.forName("UTF-8").decode(buffer));
+                try {
+                    currentString += new String(buffer.array(), "UTF-8");
+                    System.out.println("received message:" + currentString);
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
 
                 if (currentBufferSize == currentRemainingBufferSize) {
+                    // 세션 등록 해 놓고 세션에다가 currentString 을 보내주어야 함.
                     // 다 받았을 때 초기화
                     currentBufferSize = 0;
                     currentRemainingBufferSize = 0;
+                    currentString = "";
                 }
 //                new String(buffer.array(), "UTF-8").length()
                 buffer.position(0);
