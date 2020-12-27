@@ -18,9 +18,9 @@ public class AIOClient implements Runnable {
         while (true) {
             Thread.sleep(1000);
             String date = new Date().toString();
-            System.out.println(date.length());
+            System.out.println(date.length() + 4);
             ByteBuffer buffer = ByteBuffer.allocate(1024);
-            buffer.putInt(date.length());
+            buffer.putInt(date.length() + 4);
             buffer.put(date.getBytes());
             buffer.flip();
             clientSocketChannel.write(buffer, buffer, new CompletionHandler<Integer, ByteBuffer>() {

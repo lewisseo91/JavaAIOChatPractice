@@ -1,6 +1,7 @@
 package servlet;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
@@ -10,9 +11,11 @@ import java.nio.charset.Charset;
 public class AIOServer {
     public static int PORT = 10800;
     public static AsynchronousServerSocketChannel serverSocketChannel;
-    public static void handleCompletionHandler(AsynchronousSocketChannel serverChannel) throws IOException {
+    public static void handleCompletionHandler(AsynchronousSocketChannel serverChannel) throws Exception {
         ByteBuffer buffer = ByteBuffer.allocate(12);
         serverChannel.read(buffer, null, new CompletionHandler<Integer, Void>() {
+            int currentBufferSize = 0;
+            int currentRemainingBufferSize = 0;
             @Override
             public void completed(Integer result, Void attachment) {
 
@@ -24,9 +27,23 @@ public class AIOServer {
                     }
                 }
                 buffer.flip();
-                int bufferSize = buffer.getInt(0);
-                System.out.println(bufferSize);
+//                int bufferCapacity = buffer.capacity();
+                if(buffer.hasRemaining() && currentRemainingBufferSize == 0) {
+//                    System.out.println("remaining:" + ", " + buffer.remaining());
+                    currentBufferSize = buffer.getInt(0);
+                }
+                currentRemainingBufferSize += buffer.remaining();
+
+                System.out.println("currentBufferSize:" + ", " + currentBufferSize);
+                System.out.println("currentRemainingBufferSize:" + ", " + currentRemainingBufferSize);
                 System.out.println("received message:" + Charset.forName("UTF-8").decode(buffer));
+
+                if (currentBufferSize == currentRemainingBufferSize) {
+                    // 다 받았을 때 초기화
+                    currentBufferSize = 0;
+                    currentRemainingBufferSize = 0;
+                }
+//                new String(buffer.array(), "UTF-8").length()
                 buffer.position(0);
                 buffer.limit(buffer.capacity());
                 serverChannel.read(buffer, null, this);
@@ -53,7 +70,7 @@ public class AIOServer {
                 System.out.println("Server Connected");
                 try {
                     handleCompletionHandler(result);
-                } catch (IOException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
