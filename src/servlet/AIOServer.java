@@ -72,6 +72,35 @@ public class AIOServer {
         });
     }
 
+    public static void start() throws Exception {
+
+        serverSocketChannel = AsynchronousServerSocketChannel.open();
+        serverSocketChannel.bind(new InetSocketAddress(PORT));
+        serverSocketChannel.accept(null, new CompletionHandler<AsynchronousSocketChannel, Void>() {
+            @Override
+            public void completed(AsynchronousSocketChannel result, Void attachment) {
+                System.out.println("Server Connected");
+                try {
+                    handleCompletionHandler(result);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void failed(Throwable exc, Void attachment) {
+                System.err.println(exc);
+                try {
+                    serverSocketChannel.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        System.out.println("Server opened : " + new InetSocketAddress(PORT).getAddress().toString());
+        Thread.currentThread().join();
+    }
+
     public static void main(String[] args) throws Exception {
         serverSocketChannel = AsynchronousServerSocketChannel.open();
         serverSocketChannel.bind(new InetSocketAddress(PORT));

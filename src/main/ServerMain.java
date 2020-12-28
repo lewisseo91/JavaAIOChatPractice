@@ -20,7 +20,7 @@ public class ServerMain {
 
 		server = new Server();
 		ServerConnector connector = new ServerConnector(server);
-		connector.setPort(10800);
+		connector.setPort(9800);
 		server.addConnector(connector);
 
 		WebAppContext ctx = new WebAppContext();
@@ -44,7 +44,6 @@ public class ServerMain {
 	}
 
 	public static void AIOServerStart() throws Exception {
-//		new AIOServer().start(8888);
-//        new AioServer().startWithCompletionHandler();
+		AIOServer.start();
 	}
 }

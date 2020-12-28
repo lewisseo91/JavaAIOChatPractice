@@ -5,6 +5,14 @@
     <title>Title</title>
 </head>
 <script>
+    window.addEventListener('load', (event) => {
+        console.log('page is fully loaded');
+        fetch("http://localhost:9800/Connect").then(
+            (res) => {
+                console.log(res);
+            }
+        )
+    });
     function enterChat() {
         console.log("enter");
         var chat_text = document.getElementById("chat_context").value;
@@ -12,7 +20,7 @@
         var params = {
             chat_text: chat_text
         };
-        fetch("http://localhost:10800/Login?" + new URLSearchParams({
+        fetch("http://localhost:9800/SendChat?" + new URLSearchParams({
                 chat_text: chat_text
             })).then(
             (res) => {

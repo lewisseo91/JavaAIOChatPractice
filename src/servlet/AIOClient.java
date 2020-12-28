@@ -12,6 +12,42 @@ public class AIOClient implements Runnable {
     private static String IP_ADDRESS = "localhost";
     private static AsynchronousSocketChannel clientSocketChannel;
 
+    public static void connect() throws Exception {
+        clientSocketChannel = AsynchronousSocketChannel.open();
+        clientSocketChannel.connect(new InetSocketAddress(IP_ADDRESS, PORT));
+        Thread.currentThread().join();
+    }
+
+    public static void write(String text) throws InterruptedException {
+        ByteBuffer buffer = ByteBuffer.allocate(1024);
+        System.out.println(text);
+        buffer.putInt(text.length() + 4);
+        buffer.put(text.getBytes());
+        buffer.flip();
+        clientSocketChannel.write(buffer, buffer, new CompletionHandler<Integer, ByteBuffer>() {
+            @Override
+            public void completed(Integer result, ByteBuffer attachment) {
+                if( result < 0) {
+                    try {
+                        clientSocketChannel.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            @Override
+            public void failed(Throwable exc, ByteBuffer attachment) {
+                System.err.println(exc);
+                try {
+                    clientSocketChannel.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
     public static void main(String[] args) throws Exception {
         clientSocketChannel = AsynchronousSocketChannel.open();
         clientSocketChannel.connect(new InetSocketAddress(IP_ADDRESS, PORT));
